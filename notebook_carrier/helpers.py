@@ -2,6 +2,7 @@ import cv2
 import copy
 import numpy as np
 from pyzbar import pyzbar
+from time import sleep
 
 def splitImage(origImage):
     """Returns a list which splits the image in 3 equal pieces"""
@@ -10,7 +11,7 @@ def splitImage(origImage):
     image = copy.deepcopy(origImage)
 
     # Calculate the one-third width of the image
-    height, width = image.shape
+    height, width = image.shape[:2]
     x = width // 3
 
     # Split image into 3 parts- left, middle, right
@@ -22,12 +23,12 @@ def splitImage(origImage):
 
 class Line():
     def __init__ (self, image):
-        self.image = image
-        self.front = True
+        self.image = cv2.resize(image, (320, 240))
+        self.front = False
         self.midRight = None
         self.midLeft = None
-        self.right = None
-        self.left = None
+        self.right = False
+        self.left = False
         self.processedImage = None
     
     def processImage(self):
@@ -51,7 +52,7 @@ class Line():
         self.processedImage = splitImage(self.processedImage)
 
         def detect(img):
-            lines = cv2.HoughLines(img, 1, np.pi/180, 200)
+            lines = cv2.HoughLines(img, 1, np.pi/180, 80)
             return lines is not None and len(lines) > 0
 
         # According to the images, check for the lines
@@ -78,16 +79,16 @@ class Line():
     def QRCodeCheck(self, classroom):
         """If there is a fork in the road, run QR detection"""
 
-        if not checkForFork():
+        if not self.checkForFork():
             return None
 
         # Update the variable
-        self.image = splitImage(self.image)
+        split = splitImage(self.image)
 
         # Convert to grey for better detection
-        gray_left = cv2.cvtColor(self.image[0], cv2.COLOR_BGR2GRAY)
-        gray_mid = cv2.cvtColor(self.image[1], cv2.COLOR_BGR2GRAY)
-        gray_right = cv2.cvtColor(self.image[2], cv2.COLOR_BGR2GRAY)
+        gray_left = cv2.cvtColor(split[0], cv2.COLOR_BGR2GRAY)
+        gray_mid = cv2.cvtColor(split[1], cv2.COLOR_BGR2GRAY)
+        gray_right = cv2.cvtColor(split[2], cv2.COLOR_BGR2GRAY)
 
         # Detect code
         code_left = pyzbar.decode(gray_left)
@@ -99,17 +100,17 @@ class Line():
             data_str = obj.data.decode("utf-8")
             classes = data_str.split(",")
             if classroom in classes:
-                self.right = None
+                self.right = False
                 self.left = True
-                self.front = None
+                self.front = False
                 return None
 
         for obj in code_mid:
             data_str = obj.data.decode("utf-8")
             classes = data_str.split(",")
             if classroom in classes:
-                self.right = None
-                self.left = None
+                self.right = False
+                self.left = False
                 self.front = True
                 return None
 
@@ -118,6 +119,37 @@ class Line():
             classes = data_str.split(",")
             if classroom in classes:
                 self.right = True
-                self.left = None
-                self.front = None
+                self.left = False
+                self.front = False
                 return None
+
+    def moveToTarget(self, robot):
+        """Moves bot one step closer to target and if target is reached or an error occurs, returns False"""
+
+        # Checks for forks
+        if self.checkForFork():
+            return False
+            
+        # Moves according to given path
+        if self.left:
+            robot.left(speed=0.5)
+            sleep(0.5)
+            robot.stop()
+            robot.forward(speed=0.5)
+            sleep(0.5)
+            robot.stop()
+            return True
+        elif self.front:
+            robot.forward(speed=0.5)
+            sleep(0.5)
+            robot.stop()
+            return True
+        elif self.right:
+            robot.right(speed=0.5)
+            sleep(0.5)
+            robot.stop()
+            robot.forward(speed=0.5)
+            sleep(0.5)
+            robot.stop()
+            return True
+        return False
