@@ -12,6 +12,8 @@ Same for Arduino.
 
 Note: For Arduino the code with .cpp extention is needed while the one for the pi 5 id .py
 
+The line sensors optimal distance from the ground to the lower boundary of the black sensing box is 3mm - 8mm.
+
 ### Circuit Diagrams
 
 After fixing in the code, here are the circuit diagram for Arduino for the codes.
