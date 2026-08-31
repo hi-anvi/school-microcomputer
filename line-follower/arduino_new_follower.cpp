@@ -10,10 +10,10 @@ int led = 13; // LED
 int enr = 3; // pmw pin for right motors
 int enl = 5; //pmw pin for left motors
 
-int vspeed = 60; // RPM on straight
-int tspeed = 75; // RPM on turn
+int vspeed = 55; // RPM on straight
+int tspeed = 80; // RPM on turn
 int tdelay = 8; // Time delay in ms
-int tdelayplus = 8; // Add delay on turns
+int tdelayplus = 6; // Add delay on turns
 
 void setup() {
   pinMode(mr1,OUTPUT);
